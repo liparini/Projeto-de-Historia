@@ -1,0 +1,273 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Quiz de História - Ensino Médio</title>
+  <style>
+    body {
+      font-family: 'Segoe UI', sans-serif;
+      background: linear-gradient(to right, #f5f7fa, #c3cfe2);
+      margin: 0;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      height: 100vh;
+      color: #222;
+    }
+
+    #start-screen, #quiz-container {
+      background: white;
+      padding: 30px;
+      border-radius: 15px;
+      box-shadow: 0 8px 20px rgba(0,0,0,0.15);
+      max-width: 600px;
+      width: 90%;
+      text-align: center;
+    }
+
+    #imagem {
+      width: 100%;
+      max-height: 300px;
+      object-fit: contain;
+      border-radius: 10px;
+      margin: 15px 0;
+    }
+
+    button {
+      cursor: pointer;
+      background: #4f46e5;
+      border: none;
+      padding: 12px 25px;
+      color: white;
+      border-radius: 10px;
+      font-size: 1.1rem;
+      margin: 10px 0;
+      transition: background 0.3s ease;
+    }
+
+    button:hover {
+      background: #4338ca;
+    }
+
+    .opcao {
+      display: block;
+      width: 100%;
+      margin: 10px 0;
+      background: #e0e7ff;
+      color: #1e40af;
+      font-weight: 600;
+      padding: 10px;
+      border-radius: 8px;
+      border: 2px solid transparent;
+      transition: border-color 0.3s;
+      word-wrap: break-word;
+    }
+
+    .opcao:hover:not(:disabled) {
+      border-color: #4f46e5;
+      background: #c7d2fe;
+    }
+
+    .correto {
+      background-color: #22c55e !important;
+      color: white !important;
+      border-color: #15803d !important;
+    }
+
+    .errado {
+      background-color: #ef4444 !important;
+      color: white !important;
+      border-color: #b91c1c !important;
+    }
+
+    #feedback {
+      margin-top: 15px;
+      font-style: italic;
+      min-height: 70px;
+      background-color: #f1f5f9;
+      padding: 10px;
+      border-radius: 8px;
+      color: #000;
+    }
+
+    #pontuacao, #cronometro {
+      margin-top: 15px;
+      font-weight: bold;
+    }
+  </style>
+</head>
+<body>
+
+  <div id="start-screen">
+    <h1>Quiz de História - Ensino Médio</h1>
+    <button id="start-btn">Começar</button>
+  </div>
+
+  <div id="quiz-container" style="display:none">
+    <h2 id="pergunta"></h2>
+    <img id="imagem" src="" alt="Imagem relacionada à pergunta" />
+    <div id="opcoes"></div>
+    <div id="feedback"></div>
+    <div id="cronometro">⏱️ Tempo restante: <span id="tempo">15</span>s</div>
+    <div id="pontuacao">Pontuação: 0</div>
+    <button id="recomecar-btn" style="display:none;">Recomeçar Quiz</button>
+  </div>
+
+  <script>
+    const perguntas = [
+      {
+        pergunta: "Qual foi o principal motivo da Revolução Francesa?",
+        imagem: "imagens/revolucao_francesa.jpg",
+        opcoes: [
+          "Fim do absolutismo e privilégios da nobreza",
+          "Descoberta da América",
+          "Industrialização da França",
+          "Unificação da Alemanha"
+        ],
+        correta: 0,
+        explicacao: "A Revolução Francesa começou por causa do descontentamento com o absolutismo, altos impostos e privilégios da nobreza e clero.",
+        calculoCorreto: "O absolutismo concentrava todo o poder na figura do rei e a nobreza tinha privilégios, o que gerava desigualdade social."
+      },
+      {
+        pergunta: "Quem foi Dom Pedro I?",
+        imagem: "imagens/dom_pedro.jpg",
+        opcoes: [
+          "Primeiro imperador do Brasil",
+          "Um revolucionário francês",
+          "Um líder da Revolução Industrial",
+          "Um faraó do Egito"
+        ],
+        correta: 0,
+        explicacao: "Dom Pedro I foi o primeiro imperador do Brasil e proclamou a independência do país em 1822.",
+        calculoCorreto: "Ele declarou a independência às margens do Rio Ipiranga, o famoso 'Grito do Ipiranga'."
+      },
+      {
+        pergunta: "O que foi o Tratado de Tordesilhas?",
+        imagem: "imagens/tratado_tordesilhas.jpg",
+        opcoes: [
+          "Divisão das terras recém-descobertas entre Portugal e Espanha",
+          "Um acordo comercial entre Inglaterra e França",
+          "Um tratado de paz da Segunda Guerra Mundial",
+          "Um documento que proibiu a escravidão"
+        ],
+        correta: 0,
+        explicacao: "O Tratado de Tordesilhas dividiu as novas terras entre Portugal e Espanha em 1494.",
+        calculoCorreto: "Ele estabeleceu uma linha imaginária a 370 léguas a oeste das ilhas de Cabo Verde."
+      }
+    ];
+
+    const startBtn = document.getElementById('start-btn');
+    const startScreen = document.getElementById('start-screen');
+    const quizContainer = document.getElementById('quiz-container');
+    const perguntaEl = document.getElementById('pergunta');
+    const imagemEl = document.getElementById('imagem');
+    const opcoesEl = document.getElementById('opcoes');
+    const feedbackEl = document.getElementById('feedback');
+    const pontuacaoEl = document.getElementById('pontuacao');
+    const cronometroEl = document.getElementById('tempo');
+    const recomecarBtn = document.getElementById('recomecar-btn');
+
+    let indiceAtual = 0;
+    let pontuacao = 0;
+    let acertos = 0;
+    let erros = 0;
+    let tempo = 15;
+    let intervalo;
+
+    startBtn.addEventListener('click', iniciarQuiz);
+    recomecarBtn.addEventListener('click', iniciarQuiz);
+
+    function iniciarQuiz() {
+      startScreen.style.display = 'none';
+      quizContainer.style.display = 'block';
+      pontuacao = 0;
+      acertos = 0;
+      erros = 0;
+      indiceAtual = 0;
+      tempo = 15;
+      recomecarBtn.style.display = 'none';
+      feedbackEl.textContent = '';
+      mostrarPergunta();
+      iniciarCronometro();
+    }
+
+    function mostrarPergunta() {
+      const p = perguntas[indiceAtual];
+      perguntaEl.textContent = p.pergunta;
+      imagemEl.src = p.imagem;
+      imagemEl.style.display = "block";
+      opcoesEl.innerHTML = '';
+      feedbackEl.textContent = '';
+      cronometroEl.textContent = tempo;
+
+      p.opcoes.forEach((opcao, i) => {
+        const btn = document.createElement('button');
+        btn.textContent = opcao;
+        btn.classList.add('opcao');
+        btn.onclick = () => verificarResposta(i);
+        opcoesEl.appendChild(btn);
+      });
+    }
+
+    function verificarResposta(resposta) {
+      clearInterval(intervalo);
+      const p = perguntas[indiceAtual];
+      const botoes = document.querySelectorAll('.opcao');
+
+      botoes.forEach((btn, i) => {
+        btn.disabled = true;
+        if (i === p.correta) btn.classList.add('correto');
+        if (i === resposta && i !== p.correta) btn.classList.add('errado');
+      });
+
+      if (resposta === p.correta) {
+        feedbackEl.style.color = "#16a34a";
+        feedbackEl.textContent = "✅ Correto!";
+        pontuacao += 10;
+        acertos++;
+      } else {
+        feedbackEl.style.color = "#dc2626";
+        feedbackEl.innerHTML = `❌ Errado! ${p.explicacao}<br><strong>Explicação detalhada:</strong> ${p.calculoCorreto}`;
+        erros++;
+      }
+
+      pontuacaoEl.textContent = `Pontuação: ${pontuacao}`;
+
+      setTimeout(() => {
+        indiceAtual++;
+        tempo = 15;
+        if (indiceAtual < perguntas.length) {
+          mostrarPergunta();
+          iniciarCronometro();
+        } else {
+          finalizarQuiz();
+        }
+      }, 6000);
+    }
+
+    function iniciarCronometro() {
+      cronometroEl.textContent = tempo;
+      intervalo = setInterval(() => {
+        tempo--;
+        cronometroEl.textContent = tempo;
+        if (tempo <= 0) {
+          clearInterval(intervalo);
+          verificarResposta(-1); // Resposta inválida (não respondeu a tempo)
+        }
+      }, 1000);
+    }
+
+    function finalizarQuiz() {
+      perguntaEl.textContent = "🎉 Parabéns! Você finalizou o quiz.";
+      imagemEl.style.display = 'none';
+      opcoesEl.innerHTML = '';
+      feedbackEl.style.color = "#000";
+      feedbackEl.innerHTML = `Você acertou <strong>${acertos}</strong> perguntas e errou <strong>${erros}</strong>.<br>A pontuação total é <strong>${pontuacao}</strong> pontos.`;
+      cronometroEl.textContent = "";
+      recomecarBtn.style.display = 'inline-block';
+    }
+  </script>
+
+</body>
+</html>
